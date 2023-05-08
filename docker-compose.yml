@@ -1,0 +1,11 @@
+services:
+  model:
+    image: "ghcr.io/remla23-team19/model-service:1.0.2"
+    ports:
+     - "8080:8080"
+  app:
+    image: "ghcr.io/remla23-team19/app:1.0.1"
+    ports:
+     - "9999:9999"
+    environment:
+     - MODEL_HOST=http://model:8080
