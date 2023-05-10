@@ -1,4 +1,10 @@
-# Instructions
+# Operation 🏃
+[![Latest Commit](https://img.shields.io/github/last-commit/remla23-team19/operation.svg)](https://github.com/remla23-team19/operation/commits/main) ![Docker Compose](https://img.shields.io/badge/repository-Docker%20Compose-blue)
+
+
+All deployment files for the complete project.
+
+## Instructions
 1) Clone this repository:
 ```
 git clone https://github.com/remla23-team19/operation.git
@@ -14,7 +20,7 @@ docker-compose up
 http://localhost:9999
 ```
 
-Time to check the sentiment using our [app](https://github.com/remla23-team19/app) and [model-service](https://github.com/remla23-team19/model-service): **Sentimentor**! 🎉🤔
+👉 Check sentiment of text (using our [app](https://github.com/remla23-team19/app)) based on the [model-service](https://github.com/remla23-team19/model-service).
 
 Once you're finished, you can stop the containers (`CTRL + C`) and remove them:
 ```
