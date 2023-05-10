@@ -1,11 +1,12 @@
 services:
   model:
-    image: "ghcr.io/remla23-team19/model-service:1.0.3"
+    image: "ghcr.io/remla23-team19/model-service:1.0.0"
     ports:
      - "8080:8080"
   app:
-    image: "ghcr.io/remla23-team19/app:1.0.2"
+    image: "ghcr.io/remla23-team19/app:1.0.0"
     ports:
      - "9999:9999"
     environment:
      - MODEL_HOST=http://model:8080/sentiment
+     - VERSION=1.0.0
