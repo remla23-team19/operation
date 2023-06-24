@@ -73,7 +73,7 @@ cd operation/k8s
 4. Create the Kubernetes resources:
 
 ```
-kubectl apply -f deployment-test.yml
+kubectl apply -f kubernetes.yml
 ```
 
 5. Wait until all pods are running (this may take a few minutes), inspect the status with:
@@ -95,7 +95,7 @@ minikube tunnel
 Once you're finished, you can delete the Kubernetes resources with:
 
 ```
-kubectl delete -f deployment-test.yml
+kubectl delete -f kubernetes.yml
 ```
 
 > Note: if you want to stop the dashboard and tunnel, you can do so with `CTRL + C`.
