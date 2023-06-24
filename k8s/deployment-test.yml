@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-deployment
+  labels:
+    app: model-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: model-service
+  template:
+    metadata:
+      labels:
+        app: model-service
+    spec:
+      containers:
+      - name: model-service
+        image: "ghcr.io/remla23-team19/model-service:latest"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+      imagePullSecrets:
+      - name: dockerconfigjson-github-com
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-service-serv
+  labels:
+    app: model-service-label
+spec:
+  selector:
+    app: model-service
+  ports:
+    - port: 8080 
+      targetPort: 8080
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment
+  labels: 
+    app: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      containers:
+      - name: app
+        image: "ghcr.io/remla23-team19/app:latest"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9999 
+        env:
+        - name: MODEL_URL
+          valueFrom:
+            configMapKeyRef:
+              name: my-config
+              key: model.host
+      imagePullSecrets:
+      - name: dockerconfigjson-github-com
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-serv
+  labels:
+    app: app-service-label
+spec: 
+  selector:
+    app: app
+  ports: 
+    - port: 9999
+      targetPort: 9999
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: 
+  name: my-ingress
+#  annotations:
+#    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: app-serv
+            port:
+              number: 9999 
+      - pathType: Prefix
+        path: "/sentiment"
+        backend:
+          service:
+            name: model-service-serv
+            port:
+              number: 8080
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-config
+data:
+  model.host: "http://localhost/sentiment"
+
+#...
+#---
+# apiVersion: monitoring.coreos.com/v1
+#kind: ServiceMonitor
+#metadata:
+#  name: mymonitor
+#  labels:
+#    release: myprom
+#spec:
+#  selector:
+#    matchLabels:
+#      app: app-deployment
+#  endpoints:
+#  - interval: 1s
