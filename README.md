@@ -99,3 +99,30 @@ kubectl delete -f kubernetes.yml
 ```
 
 > Note: if you want to stop the dashboard and tunnel, you can do so with `CTRL + C`.
+
+#### Monitoring 👀
+
+With the help of [Helm](https://helm.sh/), you can install [Prometheus](https://prometheus.io/) and [Grafana](https://grafana.com/) to monitor the Kubernetes cluster.
+
+1. Install Helm:
+
+```
+brew install helm
+```
+
+2. Add the Prometheus Repository and Install Prometheus Stack:
+
+```
+helm repo add prom-repo https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install myprom prom-repo/kube-prometheus-stack
+```
+
+3. Access the dashboards via tunneling with Minikube:
+
+```
+minikube service myprom-kube-prometheus-sta-prometheus --url
+minikube service myprom-grafana --url
+```
+
+> Note: this will provide a URL that you can open in your browser. To stop the tunnel, press `CTRL + C`. To delete the Prometheus stack, run `helm uninstall myprom`.
