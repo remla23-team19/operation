@@ -126,3 +126,11 @@ minikube service myprom-grafana --url
 ```
 
 > Note: this will provide a URL that you can open in your browser. To stop the tunnel, press `CTRL + C`. To delete the Prometheus stack, run `helm uninstall myprom`.
+
+4. View metrics by going to the following page:
+
+```
+http://localhost/metrics
+```
+
+> Note: refresh the page to see the metrics change.
