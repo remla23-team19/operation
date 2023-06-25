@@ -15,13 +15,13 @@ spec:
         app: model-service
     spec:
       containers:
-      - name: model-service
-        image: "ghcr.io/remla23-team19/model-service:latest"
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
+        - name: model-service
+          image: "ghcr.io/remla23-team19/model-service:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
       imagePullSecrets:
-      - name: dockerconfigjson-github-com
+        - name: dockerconfigjson-github-com
 
 ---
 apiVersion: v1
@@ -34,15 +34,14 @@ spec:
   selector:
     app: model-service
   ports:
-    - port: 8080 
+    - port: 8080
       targetPort: 8080
 ---
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: app-deployment
-  labels: 
+  labels:
     app: app
 spec:
   replicas: 1
@@ -55,19 +54,19 @@ spec:
         app: app
     spec:
       containers:
-      - name: app
-        image: "ghcr.io/remla23-team19/app:latest"
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 9999 
-        env:
-        - name: MODEL_URL
-          valueFrom:
-            configMapKeyRef:
-              name: my-config
-              key: model.host
+        - name: app
+          image: "ghcr.io/remla23-team19/app:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9999
+          env:
+            - name: MODEL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: my-config
+                  key: model.host
       imagePullSecrets:
-      - name: dockerconfigjson-github-com
+        - name: dockerconfigjson-github-com
 
 ---
 apiVersion: v1
@@ -76,39 +75,38 @@ metadata:
   name: app-serv
   labels:
     app: app-service-label
-spec: 
+spec:
   selector:
     app: app
-  ports: 
+  ports:
     - port: 9999
       targetPort: 9999
 
 ---
-
 apiVersion: networking.k8s.io/v1
 kind: Ingress
-metadata: 
+metadata:
   name: my-ingress
 #  annotations:
 #    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-  - http:
-      paths:
-      - pathType: Prefix
-        path: "/"
-        backend:
-          service:
-            name: app-serv
-            port:
-              number: 9999 
-      - pathType: Prefix
-        path: "/sentiment"
-        backend:
-          service:
-            name: model-service-serv
-            port:
-              number: 8080
+    - http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: app-serv
+                port:
+                  number: 9999
+          - pathType: Prefix
+            path: "/sentiment"
+            backend:
+              service:
+                name: model-service-serv
+                port:
+                  number: 8080
 
 ---
 apiVersion: v1
@@ -118,17 +116,16 @@ metadata:
 data:
   model.host: "http://localhost/sentiment"
 
-#...
-#---
-# apiVersion: monitoring.coreos.com/v1
-#kind: ServiceMonitor
-#metadata:
-#  name: mymonitor
-#  labels:
-#    release: myprom
-#spec:
-#  selector:
-#    matchLabels:
-#      app: app-deployment
-#  endpoints:
-#  - interval: 1s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mymonitor
+  labels:
+    release: myprom
+spec:
+  selector:
+    matchLabels:
+      app: app-deployment
+  endpoints:
+    - interval: 1s
