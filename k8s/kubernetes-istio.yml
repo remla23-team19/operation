@@ -1,0 +1,247 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-deployment-v1
+  labels:
+    { app: model-service, version: v1 }
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      { app: model-service, version: v1 }
+  template:
+    metadata:
+      labels:
+        { app: model-service, version: v1 }
+    spec:
+      containers:
+        - name: model-service
+          image: "ghcr.io/remla23-team19/model-service:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+      imagePullSecrets:
+        - name: dockerconfigjson-github-com
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-deployment-v2
+  labels:
+    { app: model-service, version: v2 }
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      { app: model-service, version: v2 }
+  template:
+    metadata:
+      labels:
+        { app: model-service, version: v2 }
+    spec:
+      containers:
+        - name: model-service
+          image: "ghcr.io/remla23-team19/model-service:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+      imagePullSecrets:
+        - name: dockerconfigjson-github-com
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-service-serv
+  labels:
+    app: model-service-label
+spec:
+  selector:
+    app: model-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment-v1
+  labels:
+    { app: app, version: v1 }
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      { app: app, version: v1 }
+  template:
+    metadata:
+      labels:
+        { app: app, version: v1 }
+    spec:
+      containers:
+        - name: app
+          image: "ghcr.io/remla23-team19/app:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9999
+          env:
+            - name: MODEL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: my-config
+                  key: model.host
+      imagePullSecrets:
+        - name: dockerconfigjson-github-com
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment-v2
+  labels:
+    { app: app, version: v2 }
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      { app: app, version: v2 }
+  template:
+    metadata:
+      labels:
+        { app: app, version: v2 }
+    spec:
+      containers:
+        - name: app
+          image: "ghcr.io/remla23-team19/app:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9999
+          env:
+            - name: MODEL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: my-config
+                  key: model.host
+      imagePullSecrets:
+        - name: dockerconfigjson-github-com
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-serv
+  labels:
+    app: app-service-label
+spec:
+  selector:
+    app: app
+  ports:
+    - port: 9999
+      targetPort: 9999
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: app-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: app-serv
+spec:
+  host: app-serv
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: model-service-serv
+spec:
+  host: model-service-serv
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: app-entry-service
+spec:
+  gateways:
+    - app-gateway
+  hosts:
+  - "*"
+  http:
+  - match:
+    - uri:
+        exact: /
+    route:
+    - destination:
+        host: app-serv
+        subset: v1
+      weight: 90
+    - destination:
+        host: app-serv
+        subset: v2
+      weight: 10
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: model-entry-service
+spec:
+  hosts:
+  - model-service-serv
+  http:
+  - match:
+    - sourceLabels:
+        version: v2
+    route:
+      - destination:
+          host: model-service-serv
+          subset: v2
+  - route:
+      - destination:
+          host: model-service-serv
+          subset: v1
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-config
+data:
+  model.host: "http://localhost/sentiment"
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mymonitor
+  labels:
+    release: myprom
+spec:
+  selector:
+    matchLabels:
+      app: app-deployment
+  endpoints:
+    - interval: 1s
