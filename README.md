@@ -134,3 +134,52 @@ http://localhost/metrics
 ```
 
 > Note: refresh the page to see the metrics change.
+
+#### Istio
+A second deployment using istio for traffic management can be installed and used as follows. Make sure to first follow [the installation instructions of istio](https://istio.io/latest/docs/setup/install/istioctl/)
+
+1. Start Minikube (less memory also works):
+
+```
+minikube start --memory=16384 --cpus=4
+```
+
+2. Install Istio
+
+```
+istioctl install
+```
+
+3. Enable Istio injection
+   
+```
+kubectl label ns default istio-injection=enabled
+```
+
+4. Apply the configuration to the cluster
+
+```
+kubectl apply -f kubernetes-istio.yml
+```
+
+5. Install Istio addons
+
+```
+kubectl apply -f istio-1.17.2/samples/addons/prometheus.yaml
+kubectl apply -f istio-1.17.2/samples/addons/jaeger.yaml
+kubectl apply -f istio-1.17.2/samples/addons/kiali.yaml
+```
+> Note: make sure you're inside the istio folder downloaded during [installation](https://istio.io/latest/docs/setup/install/istioctl/) when you run these.
+
+6. Access the app
+
+```
+minikube tunnel
+```
+
+7. View dashboards
+
+```
+istioctl dashboard prometheus
+istioctl dashboard kiali
+```
