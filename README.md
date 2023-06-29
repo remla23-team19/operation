@@ -156,7 +156,21 @@ istioctl install
 kubectl label ns default istio-injection=enabled
 ```
 
-4. Add the Prometheus Repository and Install Prometheus Stack:
+4. Enable the [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) and metrics-server addons:
+
+```
+minikube addons enable ingress
+minikube addons enable metrics-server
+```
+
+5. Clone this repository and go to the `k8s` folder:
+
+```
+git clone https://github.com/remla23-team19/operation.git
+cd operation/k8s
+```
+
+6. Add the Prometheus Repository and Install Prometheus Stack:
 
 ```
 helm repo add prom-repo https://prometheus-community.github.io/helm-charts
@@ -164,13 +178,13 @@ helm repo update
 helm install myprom prom-repo/kube-prometheus-stack
 ```
 
-5. Apply the configuration to the cluster
+7. Apply the configuration to the cluster
 
 ```
 kubectl apply -f kubernetes-istio.yml
 ```
 
-6. Install Istio addons
+8. Install Istio addons
 
 ```
 kubectl apply -f istio-1.17.2/samples/addons/prometheus.yaml
@@ -179,13 +193,13 @@ kubectl apply -f istio-1.17.2/samples/addons/kiali.yaml
 ```
 > Note: make sure you're inside the istio folder downloaded during [installation](https://istio.io/latest/docs/setup/install/istioctl/) when you run these.
 
-7. Access the app
+9. Access the app
 
 ```
 minikube tunnel
 ```
 
-8. View dashboards
+10. View dashboards
 
 ```
 istioctl dashboard prometheus
