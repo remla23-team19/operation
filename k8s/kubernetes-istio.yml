@@ -11,6 +11,9 @@ spec:
       { app: model-service, version: v1 }
   template:
     metadata:
+      annotations:
+         prometheus.io/scrape: "true"
+         prometheus.io/port: "8080"
       labels:
         { app: model-service, version: v1 }
     spec:
@@ -36,6 +39,9 @@ spec:
       { app: model-service, version: v2 }
   template:
     metadata:
+      annotations:
+         prometheus.io/scrape: "true"
+         prometheus.io/port: "8080"
       labels:
         { app: model-service, version: v2 }
     spec:
@@ -74,6 +80,9 @@ spec:
       { app: app, version: v1 }
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9999"
       labels:
         { app: app, version: v1 }
     spec:
@@ -105,7 +114,10 @@ spec:
     matchLabels:
       { app: app, version: v2 }
   template:
-    metadata:
+    metadata:     
+      annotations:
+         prometheus.io/scrape: "true"
+         prometheus.io/port: "9999"
       labels:
         { app: app, version: v2 }
     spec:
@@ -194,21 +206,27 @@ spec:
   http:
   - match:
     - uri:
-        exact: /
+        prefix: /sentiment
+    route:
+    - destination:
+        host: model-service-serv
+  - match:
+    - uri:
+        prefix: /
     route:
     - destination:
         host: app-serv
         subset: v1
-      weight: 90
+      weight: 50
     - destination:
         host: app-serv
         subset: v2
-      weight: 10
+      weight: 50
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: model-entry-service
+  name: model-service-serv
 spec:
   hosts:
   - model-service-serv
@@ -217,13 +235,13 @@ spec:
     - sourceLabels:
         version: v2
     route:
-      - destination:
-          host: model-service-serv
-          subset: v2
+    - destination:
+        host: model-service-serv
+        subset: v2
   - route:
-      - destination:
-          host: model-service-serv
-          subset: v1
+    - destination:
+        host: model-service-serv
+        subset: v1
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -245,3 +263,49 @@ spec:
       app: app-deployment
   endpoints:
     - interval: 1s
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: filter-local-ratelimit-svc
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      istio: ingressgateway
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.local_ratelimit
+          typed_config:
+            "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+            type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+            value:
+              stat_prefix: http_local_rate_limiter
+              token_bucket:
+                max_tokens: 15
+                tokens_per_fill: 15
+                fill_interval: 60s
+              filter_enabled:
+                runtime_key: local_rate_limit_enabled
+                default_value:
+                  numerator: 100
+                  denominator: HUNDRED
+              filter_enforced:
+                runtime_key: local_rate_limit_enforced
+                default_value:
+                  numerator: 100
+                  denominator: HUNDRED
+              response_headers_to_add:
+                - append: false
+                  header:
+                    key: x-local-rate-limit
+                    value: 'true'
