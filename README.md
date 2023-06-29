@@ -156,13 +156,21 @@ istioctl install
 kubectl label ns default istio-injection=enabled
 ```
 
-4. Apply the configuration to the cluster
+4. Add the Prometheus Repository and Install Prometheus Stack:
+
+```
+helm repo add prom-repo https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install myprom prom-repo/kube-prometheus-stack
+```
+
+5. Apply the configuration to the cluster
 
 ```
 kubectl apply -f kubernetes-istio.yml
 ```
 
-5. Install Istio addons
+6. Install Istio addons
 
 ```
 kubectl apply -f istio-1.17.2/samples/addons/prometheus.yaml
@@ -171,13 +179,13 @@ kubectl apply -f istio-1.17.2/samples/addons/kiali.yaml
 ```
 > Note: make sure you're inside the istio folder downloaded during [installation](https://istio.io/latest/docs/setup/install/istioctl/) when you run these.
 
-6. Access the app
+7. Access the app
 
 ```
 minikube tunnel
 ```
 
-7. View dashboards
+8. View dashboards
 
 ```
 istioctl dashboard prometheus
